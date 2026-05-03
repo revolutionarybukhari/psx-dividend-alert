@@ -1,0 +1,59 @@
+{
+  "name": "psx-dividend-alert",
+  "version": "0.1.0",
+  "description": "Telegram alerts for PSX dividend announcements and book closures, with a buy-deadline that respects T+2 settlement and the trading calendar.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test 'tests/**/*.test.js'",
+    "test:watch": "node --test --watch 'tests/**/*.test.js'",
+    "test-scrape": "node scripts/test-scrape.js",
+    "test-telegram": "node scripts/test-telegram.js",
+    "lint": "eslint src/ tests/ scripts/",
+    "format": "prettier --write src/ tests/ scripts/",
+    "format:check": "prettier --check src/ tests/ scripts/"
+  },
+  "keywords": [
+    "psx",
+    "pakistan-stock-exchange",
+    "dividend",
+    "alert",
+    "telegram",
+    "telegram-bot",
+    "scraper",
+    "puppeteer",
+    "kse",
+    "fintech",
+    "investing",
+    "stocks",
+    "book-closure",
+    "ex-dividend"
+  ],
+  "author": "",
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/psx-dividend-alert#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/psx-dividend-alert.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/psx-dividend-alert/issues"
+  },
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  },
+  "optionalDependencies": {
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
+  }
+}

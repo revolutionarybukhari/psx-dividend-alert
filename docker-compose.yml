@@ -1,0 +1,18 @@
+services:
+  alert:
+    build: .
+    image: psx-dividend-alert
+    container_name: psx-dividend-alert
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - psx-state:/app/state
+      - ./logs:/app/logs
+    environment:
+      LOG_LEVEL: info
+      NODE_ENV: production
+      # State file path (inside the container) — matches the volume above.
+      # Override it from your config.json with:
+      #   "stateFile": "/app/state/state.json"
+volumes:
+  psx-state:

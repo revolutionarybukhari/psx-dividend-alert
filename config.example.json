@@ -1,0 +1,12 @@
+{
+  "telegram": {
+    "botToken": "YOUR_BOT_TOKEN_HERE",
+    "chatId": "YOUR_CHAT_ID_HERE"
+  },
+  "watchlist": ["MEBL", "FFC", "OGDC", "HBL", "ENGRO"],
+  "watchAll": false,
+  "leadTimeDays": 5,
+  "checkIntervalMinutes": 60,
+  "stateFile": "./state.json",
+  "holidays": []
+}

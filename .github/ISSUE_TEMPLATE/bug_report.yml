@@ -1,0 +1,73 @@
+name: Bug report
+description: Something is broken or alerts aren't firing the way they should.
+title: "[bug] "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. The more concrete details you give, the faster this gets fixed.
+        **Please don't paste your bot token. Redact it as `<TOKEN>`.**
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `node -p "require('./package.json').version"` or the commit hash you're on.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: "v22.4.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: What part is broken?
+      options:
+        - Scraper (no rows / wrong rows)
+        - Classifier (wrong alert kind)
+        - Telegram (alerts not arriving)
+        - Trading-day math (wrong buy deadline)
+        - Setup / install
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What I expected
+      placeholder: "An UPCOMING alert for $MEBL on 2026-05-09."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: From `pm2 logs psx-dividend-alert` or wherever you're running it. Redact tokens.
+      render: shell
+
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Confirmations
+      options:
+        - label: I redacted my bot token and chat id from logs
+          required: true
+        - label: I checked the open issues to see if this was already reported
+          required: true

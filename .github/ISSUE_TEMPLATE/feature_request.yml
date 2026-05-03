@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a new alert kind, config option, or integration.
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the underlying problem?
+      description: Describe the trade you missed, the alert you wished you had, the workflow that's clunky. Solutions are easier to evaluate when we know the why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Optional. If you have a specific shape in mind — config field, alert kind, message format — sketch it here.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Did you try a workaround first? What didn't work about it?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Roughly how big is this?
+      options:
+        - Tiny — config option / message tweak
+        - Medium — new alert kind, new scraper field
+        - Large — new integration (Discord, Slack, dashboard)
+        - I have no idea
+    validations:
+      required: true
