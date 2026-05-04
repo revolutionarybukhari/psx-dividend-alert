@@ -2,7 +2,7 @@
 
 # 📈 PSX Dividend Alert
 
-**Telegram alerts for Pakistan Stock Exchange dividends — with a buy deadline that actually accounts for T+2 settlement and trading holidays.**
+**Telegram alerts for Pakistan Stock Exchange dividends, BoD-meeting announcements, and yields — with a buy deadline that actually accounts for T+2 settlement and trading holidays.**
 
 [![CI](https://github.com/your-username/psx-dividend-alert/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/psx-dividend-alert/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](https://nodejs.org)
@@ -18,39 +18,53 @@
 
 > If you've ever opened the PSX payouts page on a Friday evening, realised the book closure starts Monday, and done the maths in your head about whether you can still buy in — this is for you.
 
-`psx-dividend-alert` watches the [PSX Data Portal](https://dps.psx.com.pk/payouts) for dividend announcements and book-closure dates, and pings your Telegram **before the buy deadline**, not on the ex-dividend date when it's already too late.
+`psx-dividend-alert` watches three live PSX feeds — the [payouts table](https://dps.psx.com.pk/payouts), the [BoD-meeting announcements](https://dps.psx.com.pk/announcements/companies), and (optionally) the [market-watch prices](https://dps.psx.com.pk/market-watch) — and pings your Telegram **before the buy deadline**, not on the ex-dividend date when it's already too late.
 
 It runs on a $5 VPS, a Raspberry Pi, or your laptop. Setup takes about 90 seconds.
 
 ## What an alert looks like
+
+When a payout first appears (with the optional yield line if `priceLookup: true`):
 
 ```
 🆕 NEW DIVIDEND — $MEBL
 Meezan Bank Limited
 
 💰 Cash Dividend: 175%
+📈 Yield: ~3.24% (Rs 17.5 on Rs 540)
 📅 Book Closure: 2026-05-15 → 2026-05-22
 ⏰ Buy Deadline: 2026-05-13 (in 10 days)
 
 dps.psx.com.pk/company/MEBL
 ```
 
-Then four days before the deadline:
+Four days before the deadline:
 
 ```
 ⏳ UPCOMING in 4 days — $MEBL
-Meezan Bank Limited
 …
 ⏰ Buy Deadline: 2026-05-13 (in 4 days)
 ```
 
-And on the day:
+On the day:
 
 ```
 ⚠️ URGENT — Buy TODAY — $MEBL
-Meezan Bank Limited
 …
 ⏰ Buy Deadline: 2026-05-13 (today)
+```
+
+And the earliest possible heads-up — straight from the BoD-meeting feed, before the row hits the payouts table at all:
+
+```
+🔔 DECLARED — $MEBL
+BoD-meeting outcome on 2026-04-20
+
+Cash Dividend @ Rs. 17.50/share
+💰 Detected: Rs 17.50/share
+
+Watch for the book-closure dates to land on the payouts table.
+PDF announcement
 ```
 
 No noise after that. The tool remembers what it's already alerted on and won't double-fire.
@@ -67,6 +81,8 @@ npm start
 ```
 
 That's it. Logs go to stdout; on a real deployment use [PM2](#pm2) or [Docker](#docker).
+
+> **Already have rows on the payouts page?** Run `node src/index.js --backfill` once before `npm start`. The tool will register everything currently visible as already-seen so `NEW` alerts only fire for payouts added after that point. `UPCOMING` / `URGENT` / `PASSED` still fire normally as their deadlines arrive.
 
 ### Get a Telegram bot (60 seconds)
 
@@ -141,18 +157,30 @@ For a deeper tour, read [`docs/architecture.md`](docs/architecture.md).
 
 `config.json`:
 
-| Field                  | Type            | Default            | What it does                                                                  |
-| ---------------------- | --------------- | ------------------ | ----------------------------------------------------------------------------- |
-| `telegram.botToken`    | `string`        | —                  | From `@BotFather`. **Required.**                                              |
-| `telegram.chatId`      | `string \| int` | —                  | Your Telegram chat id (user, group, or channel). **Required.**                |
-| `watchlist`            | `string[]`      | `[]`               | Symbols you care about, e.g. `["MEBL", "FFC", "OGDC"]`.                       |
-| `watchAll`             | `boolean`       | `false`            | If `true`, alert on every PSX symbol — overrides `watchlist`.                 |
-| `leadTimeDays`         | `number`        | `5`                | How many days before the buy deadline to fire `UPCOMING`.                     |
-| `checkIntervalMinutes` | `number`        | `60`               | How often to poll PSX. Don't go below 15 — be polite.                         |
-| `stateFile`            | `string`        | `./state.json`     | Where to persist seen/alerted state. Resolved relative to `config.json`.      |
-| `holidays`             | `string[]`      | `[]`               | Extra trading holidays (`YYYY-MM-DD`), merged with the built-in list.         |
+| Field                          | Type            | Default                              | What it does                                                                                                |
+| ------------------------------ | --------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `telegram.botToken`            | `string`        | —                                    | From `@BotFather`. **Required.**                                                                            |
+| `telegram.chatId`              | `string \| int` | —                                    | Your Telegram chat id (user, group, or channel). **Required.**                                              |
+| `watchlist`                    | `string[]`      | `[]`                                 | Symbols you care about, e.g. `["MEBL", "FFC", "OGDC"]`.                                                     |
+| `watchAll`                     | `boolean`       | `false`                              | If `true`, alert on every PSX symbol — overrides `watchlist`.                                               |
+| `leadTimeDays`                 | `number`        | `5`                                  | How many days before the buy deadline to fire `UPCOMING`.                                                   |
+| `checkIntervalMinutes`         | `number`        | `60`                                 | How often to poll PSX. Don't go below 15 — be polite.                                                       |
+| `stateFile`                    | `string`        | `./state.json`                       | Where to persist seen/alerted state. Resolved relative to `config.json`.                                    |
+| `holidays`                     | `string[]`      | `[]`                                 | Extra trading holidays (`YYYY-MM-DD`), merged with the built-in list.                                       |
+| `priceLookup`                  | `boolean`       | `false`                              | If `true`, fetch live last-trade prices and add a yield line to alerts.                                     |
+| `minYieldPercent`              | `number`        | `0`                                  | Suppress payout alerts whose computed yield is below this (e.g. `5` for 5%). Requires `priceLookup: true`.  |
+| `announcements.enabled`        | `boolean`       | `false`                              | If `true`, also poll the announcements feed and fire `DECLARED` alerts for BoD-meeting outcomes.            |
+| `announcements.types`          | `string[]`      | `["dividend","bonus","right"]`       | Announcement categories to alert on.                                                                        |
 
 The built-in holiday list lives in [`src/trading-calendar.js`](src/trading-calendar.js) (`PSX_TRADING_HOLIDAYS_2026`). It ships intentionally empty — PSX publishes the official calendar in December and you should drop in the real list when it does. Without it, the math just skips weekends, which is right ~50 weeks a year and wrong on Eid weeks.
+
+### CLI flags
+
+```
+node src/index.js --backfill   # one-shot: register every visible row as already-seen, exit
+node src/index.js --once       # run a single tick and exit (useful for cron)
+node src/index.js --help
+```
 
 ## 🚢 Deploy
 
@@ -204,21 +232,36 @@ The unit tests cover the classifier (alert-kind decisions, dedup), the trading-d
 
 A few directions worth considering — issues and PRs welcome on any of them.
 
-- **Announcements feed.** The scraper already exports `scrapeRecentAnnouncements()`. Wire it into `index.js` to also catch BoD-meeting dividend declarations *before* they appear in the payouts table.
 - **Watchlist via Telegram.** Add a webhook so you can `/watch FFC` and `/unwatch FFC` from your phone instead of editing `config.json`.
-- **Yield filter.** Parse the `payout` text (`"175%"`, `"Rs 5/sh"`) and only alert above a threshold yield given the current price. Needs a second scrape for prices — keep it opt-in.
-- **More adapters.** The Telegram client is intentionally tiny. A Discord webhook adapter is ~30 lines.
+- **More adapters.** The Telegram client is intentionally tiny — see [`src/telegram.js`](src/telegram.js). A Discord webhook adapter would be ~30 lines.
 - **Multi-user mode.** A `users[]` array, each with their own `chatId` + `watchlist`, all served by one process. Mind the PSX licensing terms before you turn this into a service.
+- **`EX_DIV_TODAY` alerts.** Fire on the morning the share trades ex-dividend so you know to expect the price drop.
 
 ## ❓ FAQ
 
-### Does it fetch historic PSX data?
+### What does it actually fetch from PSX?
 
-No — it polls the *current* PSX payouts table and only stores what it has seen since you started running it. It doesn't backfill dividend history, scrape prices, or pull years of announcements.
+Three live feeds, all from public pages on the PSX Data Portal:
 
-If you want a multi-year dividend archive or OHLC price data, that's a different tool and a different licensing question. PSX market data is licensed for personal and non-commercial use only, so anything that redistributes an archive needs a paid data license — email [marketdatarequest@psx.com.pk](mailto:marketdatarequest@psx.com.pk).
+1. **Payouts table** (`dps.psx.com.pk/payouts`) — always on. Drives `NEW`, `UPCOMING`, `URGENT`, `PASSED`.
+2. **Announcements feed** (`dps.psx.com.pk/announcements/companies`) — opt-in via `announcements.enabled`. Drives `DECLARED` alerts for BoD-meeting outcomes that haven't yet hit the payouts table.
+3. **Market-watch prices** (`dps.psx.com.pk/market-watch`) — opt-in via `priceLookup: true`. Used to add a yield line to alerts and to power `minYieldPercent`.
 
-The `--backfill` flag on the [roadmap](#%EF%B8%8F-roadmap) will record everything currently visible on the payouts table on first run, so the tool doesn't ignore rows that were already on the page when you started it. That's the line we stop at — it's still data PSX shows on a public page right now, not an archive.
+It only fetches what's *currently rendered* on those pages, and only stores what it has seen since you started running it.
+
+### Does it fetch *historic* PSX data?
+
+No — by design. It doesn't backfill multi-year dividend history, doesn't pull OHLC archives, doesn't scrape years of announcements. The `--backfill` flag is a one-shot snapshot of what's visible on the payouts table *right now*, nothing older.
+
+That line isn't arbitrary. PSX market data is licensed for personal and non-commercial use only, and anything that redistributes a multi-year archive needs a paid data license — email [marketdatarequest@psx.com.pk](mailto:marketdatarequest@psx.com.pk). The same caveat applies to whatever ends up in your `state.json` — it's yours to use, not yours to publish.
+
+### Will it tell me when to buy or sell?
+
+It tells you when the *buy window* is closing — no more, no less. It doesn't recommend specific stocks, doesn't size positions, doesn't generate sell signals. The decision to buy or sell anything is yours.
+
+### Can I use it for non-PSX markets?
+
+Not without a rewrite. The scraper is specific to the PSX Data Portal's HTML, and the buy-deadline math assumes T+2 settlement (true for PSX, not universal). The classifier and Telegram pieces would survive a port; the scraper would not. Happy to link to any market-specific fork — open a PR adding it to this section.
 
 ### Will it tell me when to buy or sell?
 
@@ -230,13 +273,14 @@ Not without a rewrite. The scraper is specific to the PSX Data Portal's HTML, an
 
 ## 🗺️ Roadmap
 
-- [ ] `--backfill` flag — record everything currently visible on the payouts table on first run, so existing rows aren't ignored
+- [x] `--backfill` flag — register every visible payout as already-seen on first run
+- [x] Pre-payouts announcements feed (`DECLARED` alerts for BoD-meeting outcomes)
+- [x] Live prices + yield in alerts, with `minYieldPercent` filter
 - [ ] Built-in PSX 2026 holiday list (waiting on the official PDF)
 - [ ] `EX_DIV_TODAY` alert kind (heads-up that price is about to drop)
-- [ ] Pre-payouts announcements scraper wired into the loop
 - [ ] Discord adapter
-- [ ] Optional yield-threshold filter
 - [ ] Per-user watchlists from a single process
+- [ ] Optional Telegram webhook for `/watch FFC` and `/unwatch FFC` from your phone
 
 ## 🤝 Contributing
 

@@ -8,5 +8,13 @@
   "leadTimeDays": 5,
   "checkIntervalMinutes": 60,
   "stateFile": "./state.json",
-  "holidays": []
+  "holidays": [],
+
+  "priceLookup": false,
+  "minYieldPercent": 0,
+
+  "announcements": {
+    "enabled": false,
+    "types": ["dividend", "bonus", "right"]
+  }
 }

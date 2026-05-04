@@ -5,8 +5,18 @@ All notable changes to this project will be documented here. Format follows [Kee
 ## [Unreleased]
 
 ### Added
-- README FAQ — covers historic-data scope, "buy/sell" signal expectations, and non-PSX market portability.
-- Roadmap entry for a `--backfill` flag that records everything currently visible on the payouts table on first run.
+- **`DECLARED` alert kind** — opt-in scraper for the [PSX announcements feed](https://dps.psx.com.pk/announcements/companies). Fires the moment a BoD-meeting outcome appears, so you get a heads-up before the row even hits the payouts table. Configure via `announcements.enabled` and `announcements.types`.
+- **Live prices + yield line** — opt-in lookup against `dps.psx.com.pk/market-watch`. When `priceLookup: true`, every alert message includes a yield estimate computed from the announced amount and last-trade price.
+- **`minYieldPercent` filter** — suppress payout alerts whose computed yield is below this threshold. Requires `priceLookup: true` (we need a price to compute the yield against).
+- **`--backfill` flag** — `node src/index.js --backfill` registers every payout currently on the table as already-seen and exits, so `NEW` alerts only fire for payouts added afterwards. `UPCOMING` / `URGENT` / `PASSED` still fire as their deadlines arrive.
+- **`--once` flag** — single-tick mode for cron / one-shot scripting.
+- New modules: `src/prices.js` (yield math, formatters), `src/announcements.js` (`DECLARED` classifier and filters).
+- New scraper exports: `scrapePrices`, `scrapeRecentAnnouncements` (now returns a typed shape with category + payout-text extraction), `mapPrices`, `mapAnnouncements`, `parsePrice`, `categorizeAnnouncement`, `extractPayoutText`.
+- 44 additional unit tests covering price parsing, yield math, the announcement classifier, the yield filter, the announcements tick, and the backfill helper. Total now 86.
+
+### Updated
+- README — three-feed overview at the top, configuration table covers new fields, alert preview shows the yield line and a `DECLARED` example, FAQ rewritten to keep the live-vs-historic-archive distinction crisp.
+- `config.example.json` — includes the new opt-in fields with safe defaults.
 
 ## [0.1.0] — 2026-05-03
 

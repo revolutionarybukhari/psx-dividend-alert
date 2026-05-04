@@ -12,6 +12,12 @@ import path from 'node:path';
  */
 
 /**
+ * @typedef {object} AnnouncementsConfig
+ * @property {boolean} enabled              Default false (opt-in; PSX feed is noisy)
+ * @property {string[]} types               Categories to alert on; default ['dividend','bonus','right']
+ */
+
+/**
  * @typedef {object} Config
  * @property {TelegramConfig} telegram
  * @property {string[]} watchlist
@@ -19,7 +25,10 @@ import path from 'node:path';
  * @property {number} leadTimeDays
  * @property {number} checkIntervalMinutes
  * @property {string} stateFile
- * @property {string[]} [holidays]      Override PSX_TRADING_HOLIDAYS_2026
+ * @property {string[]} [holidays]          Override PSX_TRADING_HOLIDAYS_2026
+ * @property {boolean} [priceLookup]        Fetch live prices and show yield in alerts
+ * @property {number}  [minYieldPercent]    Suppress alerts below this yield (requires priceLookup)
+ * @property {AnnouncementsConfig} [announcements]
  */
 
 const DEFAULTS = {
@@ -29,6 +38,12 @@ const DEFAULTS = {
   checkIntervalMinutes: 60,
   stateFile: './state.json',
   holidays: [],
+  priceLookup: false,
+  minYieldPercent: 0,
+  announcements: {
+    enabled: false,
+    types: ['dividend', 'bonus', 'right'],
+  },
 };
 
 /**
@@ -55,6 +70,7 @@ export async function loadConfig(configPath) {
     ...DEFAULTS,
     ...parsed,
     telegram: { ...(parsed.telegram ?? {}) },
+    announcements: { ...DEFAULTS.announcements, ...(parsed.announcements ?? {}) },
   };
 
   // Resolve stateFile relative to the config file's directory, so it
@@ -85,6 +101,15 @@ function validate(cfg) {
   }
   if (!Number.isFinite(cfg.checkIntervalMinutes) || cfg.checkIntervalMinutes < 1) {
     errors.push('checkIntervalMinutes must be a positive number (>=1)');
+  }
+  if (
+    cfg.minYieldPercent != null &&
+    (!Number.isFinite(cfg.minYieldPercent) || cfg.minYieldPercent < 0)
+  ) {
+    errors.push('minYieldPercent must be a non-negative number');
+  }
+  if (cfg.minYieldPercent > 0 && !cfg.priceLookup) {
+    errors.push('minYieldPercent requires priceLookup: true (we need a price to compute yield)');
   }
 
   if (errors.length) {
