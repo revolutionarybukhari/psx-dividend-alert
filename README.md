@@ -4,11 +4,11 @@
 
 **Telegram alerts for Pakistan Stock Exchange dividends, BoD-meeting announcements, and yields — with a buy deadline that actually accounts for T+2 settlement and trading holidays.**
 
-[![CI](https://github.com/your-username/psx-dividend-alert/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/psx-dividend-alert/actions/workflows/ci.yml)
+[![CI](https://github.com/revolutionarybukhari/psx-dividend-alert/actions/workflows/ci.yml/badge.svg)](https://github.com/revolutionarybukhari/psx-dividend-alert/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Stars](https://img.shields.io/github/stars/your-username/psx-dividend-alert?style=social)](https://github.com/your-username/psx-dividend-alert/stargazers)
+[![Stars](https://img.shields.io/github/stars/revolutionarybukhari/psx-dividend-alert?style=social)](https://github.com/revolutionarybukhari/psx-dividend-alert/stargazers)
 
 [Quick start](#-quick-start) · [How it works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration) · [Deploy](#-deploy) · [FAQ](#-faq) · [Roadmap](#%EF%B8%8F-roadmap)
 
@@ -72,7 +72,7 @@ No noise after that. The tool remembers what it's already alerted on and won't d
 ## ⚡ Quick start
 
 ```bash
-git clone https://github.com/your-username/psx-dividend-alert.git
+git clone https://github.com/revolutionarybukhari/psx-dividend-alert.git
 cd psx-dividend-alert
 npm install
 cp config.example.json config.json
@@ -288,7 +288,7 @@ PRs welcome. Quick links:
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — workflow, conventions, what's in/out of scope
 - [`docs/architecture.md`](docs/architecture.md) — the 5-minute tour
-- [Issues](https://github.com/your-username/psx-dividend-alert/issues) — bug reports and feature requests
+- [Issues](https://github.com/revolutionarybukhari/psx-dividend-alert/issues) — bug reports and feature requests
 
 If you're new to the codebase, the easiest way in is to read [`src/classifier.js`](src/classifier.js) end-to-end — it's the brain of the project and ~100 lines.
 

@@ -36,13 +36,13 @@
   ],
   "author": "",
   "license": "MIT",
-  "homepage": "https://github.com/your-username/psx-dividend-alert#readme",
+  "homepage": "https://github.com/revolutionarybukhari/psx-dividend-alert#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/psx-dividend-alert.git"
+    "url": "git+https://github.com/revolutionarybukhari/psx-dividend-alert.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/psx-dividend-alert/issues"
+    "url": "https://github.com/revolutionarybukhari/psx-dividend-alert/issues"
   },
   "dependencies": {
     "puppeteer": "^23.0.0"

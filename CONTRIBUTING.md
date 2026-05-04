@@ -5,7 +5,7 @@ Thanks for taking the time to contribute! This is a small, focused tool — the 
 ## Quick start
 
 ```bash
-git clone https://github.com/your-username/psx-dividend-alert.git
+git clone https://github.com/revolutionarybukhari/psx-dividend-alert.git
 cd psx-dividend-alert
 npm install
 cp config.example.json config.json
