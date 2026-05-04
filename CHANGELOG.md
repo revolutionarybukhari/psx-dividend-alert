@@ -4,6 +4,10 @@ All notable changes to this project will be documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- README FAQ — covers historic-data scope, "buy/sell" signal expectations, and non-PSX market portability.
+- Roadmap entry for a `--backfill` flag that records everything currently visible on the payouts table on first run.
+
 ## [0.1.0] — 2026-05-03
 
 Initial public release.

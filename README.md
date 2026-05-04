@@ -10,7 +10,7 @@
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/your-username/psx-dividend-alert?style=social)](https://github.com/your-username/psx-dividend-alert/stargazers)
 
-[Quick start](#-quick-start) · [How it works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration) · [Deploy](#-deploy) · [Roadmap](#-roadmap)
+[Quick start](#-quick-start) · [How it works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration) · [Deploy](#-deploy) · [FAQ](#-faq) · [Roadmap](#%EF%B8%8F-roadmap)
 
 </div>
 
@@ -210,8 +210,27 @@ A few directions worth considering — issues and PRs welcome on any of them.
 - **More adapters.** The Telegram client is intentionally tiny. A Discord webhook adapter is ~30 lines.
 - **Multi-user mode.** A `users[]` array, each with their own `chatId` + `watchlist`, all served by one process. Mind the PSX licensing terms before you turn this into a service.
 
+## ❓ FAQ
+
+### Does it fetch historic PSX data?
+
+No — it polls the *current* PSX payouts table and only stores what it has seen since you started running it. It doesn't backfill dividend history, scrape prices, or pull years of announcements.
+
+If you want a multi-year dividend archive or OHLC price data, that's a different tool and a different licensing question. PSX market data is licensed for personal and non-commercial use only, so anything that redistributes an archive needs a paid data license — email [marketdatarequest@psx.com.pk](mailto:marketdatarequest@psx.com.pk).
+
+The `--backfill` flag on the [roadmap](#%EF%B8%8F-roadmap) will record everything currently visible on the payouts table on first run, so the tool doesn't ignore rows that were already on the page when you started it. That's the line we stop at — it's still data PSX shows on a public page right now, not an archive.
+
+### Will it tell me when to buy or sell?
+
+It tells you when the *buy window* is closing — no more, no less. It doesn't recommend specific stocks, doesn't size positions, doesn't generate sell signals. The decision to buy or sell anything is yours.
+
+### Can I use it for non-PSX markets?
+
+Not without a rewrite. The scraper is specific to the PSX Data Portal's HTML, and the buy-deadline math assumes T+2 settlement (true for PSX, not universal). The classifier and Telegram pieces would survive a port; the scraper would not. Happy to link to any market-specific fork — open a PR adding it to this section.
+
 ## 🗺️ Roadmap
 
+- [ ] `--backfill` flag — record everything currently visible on the payouts table on first run, so existing rows aren't ignored
 - [ ] Built-in PSX 2026 holiday list (waiting on the official PDF)
 - [ ] `EX_DIV_TODAY` alert kind (heads-up that price is about to drop)
 - [ ] Pre-payouts announcements scraper wired into the loop
