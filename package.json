@@ -10,8 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test 'tests/**/*.test.js'",
-    "test:watch": "node --test --watch 'tests/**/*.test.js'",
+    "test": "node --test tests/*.test.js",
+    "test:watch": "node --test --watch tests/*.test.js",
     "test-scrape": "node scripts/test-scrape.js",
     "test-telegram": "node scripts/test-telegram.js",
     "lint": "eslint src/ tests/ scripts/",
