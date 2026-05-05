@@ -96,5 +96,20 @@ export function today(clock = () => new Date()) {
 //
 // Source: https://www.psx.com.pk/psx/exchange/general/calendar-holidays
 export const PSX_TRADING_HOLIDAYS_2026 = new Set([
-  // Add ISO dates here, e.g. '2026-03-23' for Pakistan Day.
+  '2026-02-05', // Kashmir Day
+  '2026-03-23', // Pakistan Day
+  '2026-04-01', // Eid-ul-Fitr (1st day)
+  '2026-04-02', // Eid-ul-Fitr (2nd day)
+  '2026-04-03', // Eid-ul-Fitr (3rd day)
+  '2026-05-01', // Labour Day
+  '2026-05-27', // Eid-ul-Adha (1st day)
+  '2026-05-28', // Eid-ul-Adha (2nd day)
+  '2026-05-29', // Eid-ul-Adha (3rd day)
+  '2026-06-17', // Ashura (9th Muharram)
+  '2026-06-18', // Ashura (10th Muharram)
+  '2026-08-14', // Independence Day
+  '2026-08-27', // Eid Milad-un-Nabi
+  '2026-11-09', // Iqbal Day
+  '2026-12-25', // Quaid-e-Azam's Birthday / Christmas
+  '2026-12-31', // Bank Holiday (Year End)
 ]);
