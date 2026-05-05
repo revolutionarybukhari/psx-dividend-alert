@@ -48,7 +48,7 @@
     "puppeteer": "^24.0.0"
   },
   "optionalDependencies": {
-    "pino": "^9.0.0",
+    "pino": "^10.3.1",
     "pino-pretty": "^11.0.0"
   },
   "devDependencies": {
