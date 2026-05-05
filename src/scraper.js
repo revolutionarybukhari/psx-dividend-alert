@@ -18,51 +18,141 @@ const DEFAULT_TIMEOUT_MS = 60_000;
  * @typedef {import('./classifier.js').PayoutRow} PayoutRow
  */
 
+const MONTHS = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
 /**
- * Convert "01-Jun-2026", "1 Jun 2026", "2026-06-01", or "01/06/2026" to ISO.
- * Returns null if the input doesn't look like a date.
+ * Convert PSX date strings to ISO YYYY-MM-DD. Tolerant of:
+ *   "2026-06-01"               (already ISO)
+ *   "01-Jun-2026" / "1 Jun 26" / "01/Jun/2026"
+ *   "01/06/2026"               (DD/MM/YYYY — PSX local format)
+ *   "March 6, 2026"            (month-name-first, comma)
+ *   "March 6, 2026 2:00 PM"    (with trailing time — stripped)
+ *   "01/06/2026  - 30/06/2026" (range — first date wins; use parseBookClosureRange to get both)
+ *
+ * Returns null if nothing matches.
+ *
  * @param {string} raw
  * @returns {string|null}
  */
 export function normalizeDate(raw) {
   if (!raw) return null;
-  const s = raw.trim();
+  let s = String(raw).trim();
   if (!s) return null;
+
+  // If it looks like a range (PSX BC column), take the first half.
+  const dashSplit = s.split(/\s*[-–—]\s*/);
+  if (dashSplit.length === 2 && dashSplit[0] && dashSplit[1]) s = dashSplit[0].trim();
+
+  // Drop a trailing time suffix like "2:00 PM" or "14:30".
+  s = s.replace(/\s+\d{1,2}:\d{2}(\s*[APap][Mm])?\s*$/, '').trim();
 
   // Already ISO?
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
 
-  const months = {
-    jan: 1,
-    feb: 2,
-    mar: 3,
-    apr: 4,
-    may: 5,
-    jun: 6,
-    jul: 7,
-    aug: 8,
-    sep: 9,
-    oct: 10,
-    nov: 11,
-    dec: 12,
-  };
-
-  // 01-Jun-2026 / 1 Jun 2026 / 01/Jun/2026
-  const m1 = s.match(/^(\d{1,2})[-\s/](\w{3})[-\s/](\d{4})$/i);
+  // 01-Jun-2026 / 1 Jun 2026 / 01/Jun/2026 (3-letter month between numbers)
+  const m1 = s.match(/^(\d{1,2})[-\s/]([A-Za-z]{3,9})[-\s/](\d{4})$/);
   if (m1) {
     const [, dd, mon, yyyy] = m1;
-    const mm = months[mon.toLowerCase()];
+    const mm = MONTHS[mon.toLowerCase()];
     if (mm) return `${yyyy}-${String(mm).padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
 
-  // 01/06/2026 — assume DD/MM/YYYY (PSX is local format).
+  // 01/06/2026 — DD/MM/YYYY (PSX local format)
   const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m2) {
     const [, dd, mm, yyyy] = m2;
     return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
 
+  // March 6, 2026  /  March 6 2026
+  const m3 = s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (m3) {
+    const [, mon, dd, yyyy] = m3;
+    const mm = MONTHS[mon.toLowerCase()];
+    if (mm) return `${yyyy}-${String(mm).padStart(2, '0')}-${dd.padStart(2, '0')}`;
+  }
+
   return null;
+}
+
+/**
+ * Parse PSX's "Book Closure Date" cell, which is a single column holding
+ * both endpoints separated by a dash:
+ *
+ *   "23/03/2026  - 30/03/2026"  → { from: '2026-03-23', to: '2026-03-30' }
+ *   "23/03/2026"                → { from: '2026-03-23', to: '2026-03-23' }
+ *
+ * Returns null if neither side parses.
+ *
+ * @param {string} raw
+ * @returns {{ from: string, to: string } | null}
+ */
+export function parseBookClosureRange(raw) {
+  if (!raw) return null;
+  const parts = String(raw)
+    .split(/\s*[-–—]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+  const from = normalizeDate(parts[0]);
+  if (!from) return null;
+  const to = parts[1] ? (normalizeDate(parts[1]) ?? from) : from;
+  return { from, to };
+}
+
+/**
+ * Heuristic: pull a friendly payout type out of PSX's "Dividend Announcement"
+ * cell. PSX appends suffixes like "(F)" / "(i)" / "(D)" / "(B)" / "(R)" to
+ * indicate Final / interim / Dividend / Bonus / Right.
+ *
+ *   "17%(F) (D)"    → "Cash Dividend (Final)"
+ *   "20%(i) (D)"    → "Cash Dividend (Interim)"
+ *   "10%(B)"        → "Bonus"
+ *   "25%(R)"        → "Right Shares"
+ *   "Rs 5/sh (D)"   → "Cash Dividend"
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function inferPayoutType(text) {
+  if (!text) return '';
+  const s = String(text);
+  const isFinal = /\([Ff](inal)?\)/.test(s);
+  // PSX uses (i), (ii), (iii)... to denote 1st, 2nd, 3rd interim — all "Interim" for our purposes.
+  const isInterim = /\([Ii]+(nterim)?\)/.test(s);
+  if (/\([Bb]\)/.test(s) || /\bbonus\b/i.test(s)) return 'Bonus';
+  if (/\([Rr]\)/.test(s) || /\bright\b/i.test(s)) return 'Right Shares';
+  if (/\([Dd]\)/.test(s) || /dividend|payout/i.test(s)) {
+    if (isFinal) return 'Cash Dividend (Final)';
+    if (isInterim) return 'Cash Dividend (Interim)';
+    return 'Cash Dividend';
+  }
+  return '';
 }
 
 /**
@@ -348,7 +438,16 @@ export function parsePrice(text) {
 
 /**
  * Map the raw header-keyed cells into our PayoutRow shape.
- * Tolerant of small column-name drift (PSX has changed it before).
+ *
+ * PSX's payouts table currently uses these columns:
+ *   Symbol | Company | Sector | Dividend Announcement | Date / Time of Announcement | Book Closure Date
+ *
+ * The "Book Closure Date" cell holds the whole range in one string
+ * ("23/03/2026  - 30/03/2026"), and "Dividend Announcement" combines
+ * amount + type-suffix ("17%(F) (D)").
+ *
+ * The lookup is forgiving — we match header substrings, so prior layouts
+ * with separate "BC From" / "BC To" / "Type" columns still work too.
  *
  * @param {{ headers: string[], rows: string[][] }} raw
  * @returns {PayoutRow[]}
@@ -356,7 +455,7 @@ export function parsePrice(text) {
 export function mapRows(raw) {
   const idx = (...names) => {
     for (const n of names) {
-      const i = raw.headers.findIndex((h) => h.includes(n));
+      const i = raw.headers.findIndex((h) => h.toLowerCase().includes(n.toLowerCase()));
       if (i !== -1) return i;
     }
     return -1;
@@ -364,11 +463,12 @@ export function mapRows(raw) {
 
   const iSym = idx('symbol');
   const iCo = idx('company', 'name');
-  const iType = idx('type');
-  const iAmt = idx('payout', 'dividend', 'amount');
-  const iBcFrom = idx('bc from', 'book closure from', 'from');
-  const iBcTo = idx('bc to', 'book closure to', 'to');
-  const iAnn = idx('announced', 'announcement', 'date');
+  const iType = idx('type'); // legacy layouts only
+  const iAmt = idx('dividend announcement', 'payout', 'dividend', 'amount');
+  const iBcCombined = idx('book closure date', 'book closure');
+  const iBcFrom = idx('bc from', 'book closure from');
+  const iBcTo = idx('bc to', 'book closure to');
+  const iAnn = idx('date / time', 'announced', 'announcement date');
 
   /** @type {PayoutRow[]} */
   const out = [];
@@ -376,19 +476,34 @@ export function mapRows(raw) {
     const symbol = cells[iSym]?.trim();
     if (!symbol) continue;
 
-    const bcFromISO = normalizeDate(cells[iBcFrom] ?? '');
-    if (!bcFromISO) {
-      logger.warn({ symbol, raw: cells[iBcFrom] }, 'skipping row: unparseable BC From');
+    // Resolve BC range: prefer the combined cell, fall back to two columns.
+    let bcFrom, bcTo;
+    if (iBcCombined !== -1) {
+      const range = parseBookClosureRange(cells[iBcCombined] ?? '');
+      if (range) ({ from: bcFrom, to: bcTo } = range);
+    }
+    if (!bcFrom && iBcFrom !== -1) {
+      bcFrom = normalizeDate(cells[iBcFrom] ?? '');
+      bcTo = normalizeDate(cells[iBcTo] ?? '') ?? bcFrom;
+    }
+    if (!bcFrom) {
+      logger.warn(
+        { symbol, raw: cells[iBcCombined] ?? cells[iBcFrom] },
+        'skipping row: unparseable book closure date'
+      );
       continue;
     }
+
+    const payoutText = cells[iAmt]?.trim() ?? '';
+    const payoutType = cells[iType]?.trim() || inferPayoutType(payoutText);
 
     out.push({
       symbol: symbol.toUpperCase(),
       company: cells[iCo]?.trim() ?? '',
-      payoutType: cells[iType]?.trim() ?? '',
-      payout: cells[iAmt]?.trim() ?? '',
-      bcFrom: bcFromISO,
-      bcTo: normalizeDate(cells[iBcTo] ?? '') ?? bcFromISO,
+      payoutType,
+      payout: payoutText,
+      bcFrom,
+      bcTo,
       announced: normalizeDate(cells[iAnn] ?? '') ?? '',
     });
   }

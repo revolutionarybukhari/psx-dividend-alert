@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeDate, mapRows } from '../src/scraper.js';
+import { normalizeDate, parseBookClosureRange, inferPayoutType, mapRows } from '../src/scraper.js';
 
 test('normalizeDate: ISO passes through', () => {
   assert.equal(normalizeDate('2026-05-15'), '2026-05-15');
@@ -64,5 +64,121 @@ test('mapRows: lowercases nothing, uppercases symbols', () => {
     headers: ['symbol', 'bc from'],
     rows: [['mebl', '2026-05-15']],
   });
+  assert.equal(out[0].symbol, 'MEBL');
+});
+
+// ---- Real PSX layout (current as of 2026-05) ---------------------------
+
+test('normalizeDate: "March 6, 2026 2:00 PM" with trailing time → ISO', () => {
+  assert.equal(normalizeDate('March 6, 2026 2:00 PM'), '2026-03-06');
+});
+
+test('normalizeDate: "March 6, 2026" (no time) → ISO', () => {
+  assert.equal(normalizeDate('March 6, 2026'), '2026-03-06');
+});
+
+test('normalizeDate: full month name with no comma', () => {
+  assert.equal(normalizeDate('December 30 2026'), '2026-12-30');
+});
+
+test('normalizeDate: range cell — first half wins', () => {
+  assert.equal(normalizeDate('23/03/2026  - 30/03/2026'), '2026-03-23');
+});
+
+test('parseBookClosureRange: standard PSX range', () => {
+  assert.deepEqual(parseBookClosureRange('23/03/2026  - 30/03/2026'), {
+    from: '2026-03-23',
+    to: '2026-03-30',
+  });
+});
+
+test('parseBookClosureRange: single date — to mirrors from', () => {
+  assert.deepEqual(parseBookClosureRange('23/03/2026'), {
+    from: '2026-03-23',
+    to: '2026-03-23',
+  });
+});
+
+test('parseBookClosureRange: empty / placeholder cell', () => {
+  assert.equal(parseBookClosureRange(''), null);
+  assert.equal(parseBookClosureRange('-'), null);
+});
+
+test('inferPayoutType: (F) (D) → Final cash dividend', () => {
+  assert.equal(inferPayoutType('17%(F) (D)'), 'Cash Dividend (Final)');
+});
+
+test('inferPayoutType: (i) (D) → Interim cash dividend', () => {
+  assert.equal(inferPayoutType('20%(i) (D)'), 'Cash Dividend (Interim)');
+});
+
+test('inferPayoutType: (ii) is also Interim', () => {
+  // PSX uses (i), (ii), (iii) for 1st/2nd/3rd interim — we treat all as Interim.
+  assert.equal(inferPayoutType('100%(ii) (D)'), 'Cash Dividend (Interim)');
+  assert.equal(inferPayoutType('30%(iii) (D)'), 'Cash Dividend (Interim)');
+});
+
+test('inferPayoutType: (D) only → unqualified Cash Dividend', () => {
+  assert.equal(inferPayoutType('60%(D)'), 'Cash Dividend');
+});
+
+test('inferPayoutType: (B) → Bonus', () => {
+  assert.equal(inferPayoutType('20%(B)'), 'Bonus');
+});
+
+test('inferPayoutType: (R) → Right Shares', () => {
+  assert.equal(inferPayoutType('= 37.65% AT A PREMIUM RS. 30/= PER SHARE (R)'), 'Right Shares');
+});
+
+test('mapRows: real PSX layout (combined BC column, "Dividend Announcement")', () => {
+  const out = mapRows({
+    headers: [
+      'Symbol',
+      'Company',
+      'Sector',
+      'Dividend Announcement',
+      'Date / Time of Announcement',
+      'Book Closure Date',
+    ],
+    rows: [
+      [
+        'BOK',
+        'The Bank of Khyber',
+        'COMMERCIAL BANKS',
+        '17%(F) (D)',
+        'March 6, 2026 2:00 PM',
+        '23/03/2026  - 30/03/2026',
+      ],
+      [
+        'PTL',
+        'Panther Tyres Ltd.',
+        'AUTOMOBILE PARTS & ACCESSORIES',
+        '20%(i) (D)',
+        'March 5, 2026 2:45 PM',
+        '12/03/2026  - 13/03/2026',
+      ],
+    ],
+  });
+  assert.equal(out.length, 2);
+  assert.equal(out[0].symbol, 'BOK');
+  assert.equal(out[0].payout, '17%(F) (D)');
+  assert.equal(out[0].payoutType, 'Cash Dividend (Final)');
+  assert.equal(out[0].bcFrom, '2026-03-23');
+  assert.equal(out[0].bcTo, '2026-03-30');
+  assert.equal(out[0].announced, '2026-03-06');
+  assert.equal(out[1].payoutType, 'Cash Dividend (Interim)');
+  assert.equal(out[1].bcFrom, '2026-03-12');
+  assert.equal(out[1].bcTo, '2026-03-13');
+});
+
+test('mapRows: skips rows whose BC cell is just a placeholder ("-")', () => {
+  const out = mapRows({
+    headers: ['Symbol', 'Dividend Announcement', 'Book Closure Date'],
+    rows: [
+      ['MEBL', '175%(F) (D)', '15/05/2026 - 22/05/2026'],
+      ['MFFL', '10%(i) (D)', '-'],
+    ],
+  });
+  assert.equal(out.length, 1);
   assert.equal(out[0].symbol, 'MEBL');
 });

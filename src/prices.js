@@ -29,7 +29,9 @@ export function parsePayoutAmount(text, opts = {}) {
   if (!s) return null;
 
   // Bonus / right shares — explicitly not cash. Caller should skip yield.
+  // PSX uses `(B)` / `(R)` suffixes; we also match plain words for robustness.
   if (/(bonus|right)/i.test(s)) return null;
+  if (/\([BbRr]\)/.test(s)) return null;
   if (/^\d+%\s*B\b/i.test(s)) return null;
 
   const faceValue = opts.faceValue ?? 10;

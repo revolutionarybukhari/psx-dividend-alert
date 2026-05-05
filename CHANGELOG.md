@@ -4,6 +4,13 @@ All notable changes to this project will be documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+- **Scraper now matches the live PSX layout.** The initial release shipped with column names that didn't match what `dps.psx.com.pk/payouts` actually serves — `Dividend Announcement` (combined amount + type) and `Book Closure Date` (combined `from - to` cell), plus an announcement date in `March 6, 2026 2:00 PM` format. The parser now handles all of those, and 24 of 25 live rows parse on the first try (the one skip is a row whose BC cell is just `"-"`, which is the right thing to skip).
+- New helpers `parseBookClosureRange` and `inferPayoutType` (Final / Interim / Cash Dividend / Bonus / Right Shares — including `(ii)` / `(iii)` for 2nd/3rd interim).
+- `parsePayoutAmount` now also rejects PSX's `(B)` / `(R)` suffixes so bonus and right rows don't accidentally compute a fake yield.
+- Backward-compatible: legacy `BC From` / `BC To` / `Type` column layouts still parse, so existing fixtures and tests didn't need to change.
+- 15 new unit tests covering the discovered formats. Total now 101.
+
 ### Added
 - **`DECLARED` alert kind** — opt-in scraper for the [PSX announcements feed](https://dps.psx.com.pk/announcements/companies). Fires the moment a BoD-meeting outcome appears, so you get a heads-up before the row even hits the payouts table. Configure via `announcements.enabled` and `announcements.types`.
 - **Live prices + yield line** — opt-in lookup against `dps.psx.com.pk/market-watch`. When `priceLookup: true`, every alert message includes a yield estimate computed from the announced amount and last-trade price.
