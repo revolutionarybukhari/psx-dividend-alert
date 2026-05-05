@@ -161,7 +161,9 @@ export function inferPayoutType(text) {
  */
 export async function launchBrowser() {
   return puppeteer.launch({
-    headless: 'new',
+    // Puppeteer 24 removed the `'new'` literal — `true` now means the new
+    // headless mode (the old/legacy mode is `'shell'`, which we don't want).
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
 }

@@ -4,6 +4,10 @@ All notable changes to this project will be documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- **Puppeteer bumped to ^24.0.0** (was ^23.0.0). The `headless: 'new'` literal was removed in v24 — `true` now means new-headless-mode and `'shell'` means the legacy mode. Updated [`src/scraper.js`](src/scraper.js) accordingly. Verified end-to-end with a live scrape against `dps.psx.com.pk/payouts`.
+- GitHub Actions bumped: `actions/checkout@v4 → v6`, `actions/setup-node@v4 → v6`, `softprops/action-gh-release@v2 → v3` (via Dependabot PRs #1, #2, #3). Removes the deprecation warnings the runner was emitting.
+
 ### Fixed
 - **Scraper now matches the live PSX layout.** The initial release shipped with column names that didn't match what `dps.psx.com.pk/payouts` actually serves — `Dividend Announcement` (combined amount + type) and `Book Closure Date` (combined `from - to` cell), plus an announcement date in `March 6, 2026 2:00 PM` format. The parser now handles all of those, and 24 of 25 live rows parse on the first try (the one skip is a row whose BC cell is just `"-"`, which is the right thing to skip).
 - New helpers `parseBookClosureRange` and `inferPayoutType` (Final / Interim / Cash Dividend / Bonus / Right Shares — including `(ii)` / `(iii)` for 2nd/3rd interim).
