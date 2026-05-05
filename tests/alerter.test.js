@@ -129,7 +129,7 @@ test('runTick fires UPCOMING when within lead time on a later day', async () => 
     sent.push(t);
   };
 
-  let r = await runTick({
+  const r = await runTick({
     rows: [rowMEBL],
     state: emptyState(),
     config: baseConfig,
@@ -138,7 +138,7 @@ test('runTick fires UPCOMING when within lead time on a later day', async () => 
     clock: () => parseISO('2026-04-25'), // far out → NEW
   });
 
-  r = await runTick({
+  await runTick({
     rows: [rowMEBL],
     state: r.state,
     config: baseConfig,
@@ -157,7 +157,7 @@ test('runTick fires URGENT when deadline is today', async () => {
     sent.push(t);
   };
 
-  let r = await runTick({
+  const r = await runTick({
     rows: [rowMEBL],
     state: emptyState(),
     config: baseConfig,
@@ -166,7 +166,7 @@ test('runTick fires URGENT when deadline is today', async () => {
     clock: () => parseISO('2026-04-25'),
   });
 
-  r = await runTick({
+  await runTick({
     rows: [rowMEBL],
     state: r.state,
     config: baseConfig,

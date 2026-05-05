@@ -6,6 +6,9 @@ All notable changes to this project will be documented here. Format follows [Kee
 
 ### Changed
 - **Puppeteer bumped to ^24.0.0** (was ^23.0.0). The `headless: 'new'` literal was removed in v24 — `true` now means new-headless-mode and `'shell'` means the legacy mode. Updated [`src/scraper.js`](src/scraper.js) accordingly. Verified end-to-end with a live scrape against `dps.psx.com.pk/payouts`.
+- **ESLint bumped to ^10.0.1** (was ^9.0.0). Two new rules surfaced real issues that we fixed: `preserve-caught-error` (the JSON-parse re-throw in [`src/config.js`](src/config.js) now passes `{ cause: err }` so the original error isn't lost) and `no-useless-assignment` (two genuinely-unused reassignments in [`tests/alerter.test.js`](tests/alerter.test.js)).
+- **pino bumped to ^10.3.1** (was ^9.0.0). No code change required — our usage is just `pino({ level, transport })`, which is unchanged across the major.
+- **pino-pretty bumped to ^13.1.3** (was ^11.0.0). Dev-only logger; pretty-print output verified.
 - GitHub Actions bumped: `actions/checkout@v4 → v6`, `actions/setup-node@v4 → v6`, `softprops/action-gh-release@v2 → v3` (via Dependabot PRs #1, #2, #3). Removes the deprecation warnings the runner was emitting.
 
 ### Fixed

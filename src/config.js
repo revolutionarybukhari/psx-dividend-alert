@@ -63,7 +63,7 @@ export async function loadConfig(configPath) {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new Error(`config at ${configPath} is not valid JSON: ${err.message}`);
+    throw new Error(`config at ${configPath} is not valid JSON: ${err.message}`, { cause: err });
   }
 
   const cfg = {
